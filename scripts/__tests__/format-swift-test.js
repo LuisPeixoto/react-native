@@ -37,21 +37,27 @@ afterEach(() => {
 test.each([
   ['6.4', true],
   ['6.2', false],
-])('checks the Swift toolchain version when the formatter reports main (%s)', (version, accepted) => {
-  const {commandVersion} = require('../format-utils');
-  const {globSync} = require('tinyglobby');
-  commandVersion.mockImplementation((command, args) => {
-    if (command === 'swift' && args?.[0] === 'format') {
-      return {status: 0, output: 'main'};
-    }
-    if (command === 'swift') {
-      return {status: 0, output: `Apple Swift version ${version} (swiftlang)`};
-    }
-    return {status: 1, output: ''};
-  });
-  jest.spyOn(console, 'warn').mockImplementation(() => {});
+])(
+  'checks the Swift toolchain version when the formatter reports main (%s)',
+  (version, accepted) => {
+    const {commandVersion} = require('../format-utils');
+    const {globSync} = require('tinyglobby');
+    commandVersion.mockImplementation((command, args) => {
+      if (command === 'swift' && args?.[0] === 'format') {
+        return {status: 0, output: 'main'};
+      }
+      if (command === 'swift') {
+        return {
+          status: 0,
+          output: `Apple Swift version ${version} (swiftlang)`,
+        };
+      }
+      return {status: 1, output: ''};
+    });
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-  require('../format-swift');
+    require('../format-swift');
 
-  expect(globSync).toHaveBeenCalledTimes(accepted ? 1 : 0);
-});
+    expect(globSync).toHaveBeenCalledTimes(accepted ? 1 : 0);
+  },
+);
