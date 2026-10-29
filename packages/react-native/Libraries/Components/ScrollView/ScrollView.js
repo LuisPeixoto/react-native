@@ -16,8 +16,6 @@ import type {ColorValue} from '../../StyleSheet/StyleSheet';
 import type {
   GestureResponderEvent,
   LayoutChangeEvent,
-  SafeAreaInsets,
-  SafeAreaInsetsChangeEvent,
   ScrollEvent,
 } from '../../Types/CoreEventTypes';
 import type {EventSubscription} from '../../vendor/emitter/EventEmitter';
@@ -25,7 +23,6 @@ import type {KeyboardEvent, KeyboardMetrics} from '../Keyboard/Keyboard';
 import type {ViewProps} from '../View/ViewPropTypes';
 import type {ScrollViewStickyHeaderProps} from './ScrollViewStickyHeader';
 
-import getSafeAreaContentPadding from '../../../src/private/components/scrollview/getSafeAreaContentPadding';
 import {
   HScrollContentViewNativeComponent,
   HScrollViewNativeComponent,
@@ -891,11 +888,6 @@ class ScrollView extends React.Component<ScrollViewProps, ScrollViewState> {
     layoutHeight: null,
   };
 
-  // The latest safe area insets of the native view. Only the pair across the
-  // scrollable axis affects the content container, so a change to the other
-  // pair is kept here without a render.
-  _safeAreaInsets: ?SafeAreaInsets = null;
-
   componentDidMount() {
     this._keyboardMetrics = Keyboard.metrics();
     this._additionalScrollOffset = 0;
@@ -1259,30 +1251,6 @@ class ScrollView extends React.Component<ScrollViewProps, ScrollViewState> {
     this._observedScrollSinceBecomingResponder = true;
     this.props.onScroll && this.props.onScroll(e);
   };
-
-  _handleSafeAreaInsetsChange = (e: SafeAreaInsetsChangeEvent) => {
-    const {insets} = e.nativeEvent;
-    const previous = this._safeAreaInsets;
-    this._safeAreaInsets = insets;
-    const changedAcrossScrollableAxis =
-      previous == null ||
-      (this.props.horizontal === true
-        ? previous.top !== insets.top || previous.bottom !== insets.bottom
-        : previous.left !== insets.left || previous.right !== insets.right);
-    if (changedAcrossScrollableAxis && this._padsContentForSafeArea()) {
-      this.forceUpdate();
-    }
-    this.props.experimental_onSafeAreaInsetsChange?.(e);
-  };
-
-  /**
-   * Whether the content container is padded by the safe area across the
-   * scrollable axis.
-   */
-  _padsContentForSafeArea(): boolean {
-    const behavior = this.props.contentInsetAdjustmentBehavior;
-    return Platform.OS === 'ios' && behavior != null && behavior !== 'never';
-  }
 
   _handleLayout = (e: LayoutChangeEvent) => {
     if (this.props.invertStickyHeaders === true) {
@@ -1784,25 +1752,9 @@ class ScrollView extends React.Component<ScrollViewProps, ScrollViewState> {
       ? HScrollContentViewNativeComponent
       : VScrollContentViewNativeComponent;
 
-    // Along the scrollable axis UIKit turns the safe area into content insets,
-    // so content scrolls under the system UI. Across it there is nothing to
-    // scroll, so the content container is padded instead and content is laid
-    // out clear of the system UI, such as the rail on iPhone Duo. Native
-    // removes whatever UIKit insets across that axis, so the safe area applies
-    // once.
-    const padsContentForSafeArea = this._padsContentForSafeArea();
-    const safeAreaInsets = this._safeAreaInsets;
-
     const contentContainerStyle = [
       horizontal && styles.contentContainerHorizontal,
       this.props.contentContainerStyle,
-      padsContentForSafeArea && safeAreaInsets != null
-        ? getSafeAreaContentPadding(
-            this.props.contentContainerStyle,
-            safeAreaInsets,
-            horizontal,
-          )
-        : null,
     ];
     if (__DEV__ && this.props.style !== undefined) {
       // $FlowFixMe[underconstrained-implicit-instantiation]
@@ -1939,14 +1891,6 @@ class ScrollView extends React.Component<ScrollViewProps, ScrollViewState> {
       onTouchStart: this._handleTouchStart,
       onTouchCancel: this._handleTouchCancel,
       onScroll: this._handleScroll,
-      // Routed through the handler whenever the event is observed at all, so
-      // the insets it keeps are current when the behavior changes from
-      // 'never' and the content container starts padding for them.
-      experimental_onSafeAreaInsetsChange:
-        padsContentForSafeArea ||
-        this.props.experimental_onSafeAreaInsetsChange != null
-          ? this._handleSafeAreaInsetsChange
-          : undefined,
       endDraggingSensitivityMultiplier:
         experimental_endDraggingSensitivityMultiplier,
       scrollEventThrottle: hasStickyHeaders
