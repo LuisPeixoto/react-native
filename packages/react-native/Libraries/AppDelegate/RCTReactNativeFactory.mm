@@ -289,15 +289,10 @@ static NSDictionary *RCTConvertConnectionOptionsToLaunchOptions(UISceneConnectio
   };
 
   RCTRootViewFactoryConfiguration *configuration =
-      [[RCTRootViewFactoryConfiguration alloc] initWithBundleURLBlock:bundleUrlBlock newArchEnabled:YES];
+      [[RCTRootViewFactoryConfiguration alloc] initWithBundleURLBlock:bundleUrlBlock];
 
   configuration.customizeRootView = ^(UIView *_Nonnull rootView) {
     [weakSelf.delegate customizeRootView:(RCTRootView *)rootView];
-  };
-
-  configuration.sourceURLForBridge = ^NSURL *_Nullable(RCTBridge *_Nonnull bridge)
-  {
-    return [weakSelf.delegate bundleURL];
   };
 
   if ([self.delegate respondsToSelector:@selector(extraModulesForBridge:)]) {
