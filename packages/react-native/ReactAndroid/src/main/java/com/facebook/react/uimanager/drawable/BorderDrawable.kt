@@ -566,15 +566,19 @@ internal class BorderDrawable(
 
   private fun updatePathEffect() {
     /** Used for rounded border and rounded background. */
-    val pathEffectForBorderStyle =
-        this.borderStyle?.let { style -> getPathEffect(style, getFullBorderWidth()) }
-    borderPaint.setPathEffect(pathEffectForBorderStyle)
+    this.borderStyle?.let { style ->
+      val pathEffectForBorderStyle =
+          if (this.borderStyle != null) getPathEffect(style, getFullBorderWidth()) else null
+      borderPaint.setPathEffect(pathEffectForBorderStyle)
+    }
   }
 
   private fun updatePathEffect(borderWidth: Int) {
-    val pathEffectForBorderStyle =
-        this.borderStyle?.let { style -> getPathEffect(style, borderWidth.toFloat()) }
-    borderPaint.setPathEffect(pathEffectForBorderStyle)
+    this.borderStyle?.let { style ->
+      val pathEffectForBorderStyle =
+          if (this.borderStyle != null) getPathEffect(style, borderWidth.toFloat()) else null
+      borderPaint.setPathEffect(pathEffectForBorderStyle)
+    }
   }
 
   private fun getPathEffect(style: BorderStyle, borderWidth: Float): PathEffect? {
